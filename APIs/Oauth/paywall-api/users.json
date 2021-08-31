@@ -1,0 +1,13 @@
+
+[
+	{
+		"id": 1,
+		"name": "Abe",
+		"subscribed": false
+	},
+	{
+		"id": 2,
+		"name": "Mark",
+		"subscribed": true
+	}
+]

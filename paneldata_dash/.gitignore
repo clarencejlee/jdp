@@ -1,0 +1,12 @@
+*.py[cod]
+*.pyc
+node_modules/
+venv/
+logs
+.idea
+package-lock.json
+build
+.DS_Store
+backend/.idea
+frontend/.idea
+frontend/build

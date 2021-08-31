@@ -1,0 +1,36 @@
+[[source]]
+
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+name = "pypi"
+
+
+[packages]
+
+flask = "*"
+flask-jwt-extended = "*"
+flask-restful = "*"
+flask-sqlalchemy = "*"
+flask-marshmallow = "*"
+gunicorn="*"
+flask-migrate="*"
+pytest-flask="*"
+pytest-mock="*"
+psycopg2-binary = "*"
+marshmallow = "*"
+marshmallow-sqlalchemy = "*"
+requests = "*"
+flask-dotenv = "*"
+python-dotenv = "*"
+python3-saml = "*"
+
+flask-babel = "*"
+flask-uploads = "*"
+
+[dev-packages]
+
+
+
+[pipenv]
+
+allow_prereleases=true

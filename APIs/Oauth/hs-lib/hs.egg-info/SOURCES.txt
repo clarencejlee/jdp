@@ -1,0 +1,9 @@
+README.md
+setup.py
+hs/__init__.py
+hs/core.py
+hs.egg-info/PKG-INFO
+hs.egg-info/SOURCES.txt
+hs.egg-info/dependency_links.txt
+hs.egg-info/requires.txt
+hs.egg-info/top_level.txt

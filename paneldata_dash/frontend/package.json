@@ -1,0 +1,69 @@
+{
+  "name": "jca",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@material-ui/core": "4.8.3",
+    "@material-ui/icons": "4.5.1",
+    "@material-ui/lab": "4.0.0-alpha.39",
+    "@testing-library/jest-dom": "^4.2.4",
+    "@testing-library/react": "^9.3.2",
+    "@testing-library/user-event": "^7.1.2",
+    "axios": "^0.19.2",
+    "clsx": "latest",
+    "express-favicon": "latest",
+    "html2canvas": "^1.0.0-alpha.12",
+    "js-file-download": "^0.4.9",
+    "loadash": "^1.0.0",
+    "lodash": "^4.17.15",
+    "moment": "^2.25.3",
+    "react": "^16.12.0",
+    "react-dom": "^16.12.0",
+    "react-input-mask": "^2.0.4",
+    "react-redux": "^7.2.0",
+    "react-redux-toastr": "^7.6.4",
+    "react-router": "latest",
+    "react-router-dom": "latest",
+    "react-scripts": "^3.4.0",
+    "react-scroll": "^1.7.16",
+    "redux": "^4.0.5",
+    "redux-auth-wrapper": "^2.1.0",
+    "redux-form": "^8.3.0",
+    "redux-thunk": "^2.3.0",
+    "revalidate": "latest"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "start-hot-reload": "react-scripts start",
+    "herokustart": "node src/server.js",
+    "build": "cross-env REACT_APP_API_URL=/api/v1/ react-scripts build",
+    "postinstall": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "eslintConfig": {
+    "extends": "react-app"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@types/react-redux-toastr": "^7.4.1",
+    "@types/react-router-dom": "^4.3.3",
+    "cross-env": "^6.0.3",
+    "dotenv": "^8.2.0",
+    "react-csv-downloader": "^1.5.0",
+    "redux-devtools-extension": "^2.13.8",
+    "source-map-explorer": "^1.5.0",
+    "typescript": "^3.3"
+  }
+}

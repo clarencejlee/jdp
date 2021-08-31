@@ -1,0 +1,8 @@
+.DS_Store
+.env
+
+mysql.pem
+
+**/env
+
+**/__pycache__

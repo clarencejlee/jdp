@@ -1,0 +1,26 @@
+[
+	{
+		"client": "Abe",
+		"name": "Product #1",
+		"price": 9.99,
+		"type": "once"
+	},
+	{
+		"client": "Abe",
+		"name": "Product #2",
+		"price": 19.99,
+		"type": "monthly"
+	},
+	{
+		"client": "John",
+		"name": "Johns Product #1",
+		"price": 5.99,
+		"type": "yearly"
+	},
+	{
+		"client": "Mark",
+		"name": "Marks Product #1",
+		"price": 9.99,
+		"type": "monthly"
+	}
+]

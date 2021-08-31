@@ -1,0 +1,45 @@
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+/*
+ home page style
+ */
+.masthead {
+  display: flex;
+  align-items: center;
+  background-image: linear-gradient(
+          135deg,
+          rgb(23,105,170) 30%,
+          rgb(33,150,243) 69%,
+          rgb(77,171,245) 89%
+  ) !important;
+  height: 100vh;
+}
+/*
+
+ */
+.wrapper {
+  height: 100vh
+}
+
+.category-fact-container{
+  text-align: center;
+  border: 1px solid darkgrey;
+  padding: 10px;
+}
+
+.category-fact-single .MuiFormGroup-root{
+  flex-direction: row;
+
+}

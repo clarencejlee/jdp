@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"
+        integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN"
+        crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"
+        integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV"
+        crossorigin="anonymous"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons|Material+Icons+Outlined" rel="stylesheet">
+    <!-- <link href="https://fonts.googleapis.com/css?family=Material+Icons|Material+Icons+Outlined|Material+Icons+Two+Tone|Material+Icons+Round|Material+Icons+Sharp" rel="stylesheet"> -->
+    <script>
+        function loadProjects() {
+            return fetch('http://localhost:3000/api/projects', {
+                credentials: 'include'
+            }).then((result) => {
+                return result.json()
+            }).then(({ projects }) => {
+                let formattedProjects = projects.map(p => ({ label: p.friendlyName, value: p.id }))
+
+                addOptions('#project', formattedProjects, 'Select project...')
+            })
+        }
+
+        function getSelectedOption(selector) {
+            return document.querySelector(selector).value;
+        }
+
+        function addOptions(selector, optionList, initialText) {
+            let select = document.querySelector(selector);
+            removeOptions(selector)
+
+            select.options[0].innerText = initialText
+
+            optionList.forEach(option => {
+                let optionNode = document.createElement('option');
+
+                optionNode.appendChild(document.createTextNode(option.label));
+                if (option.value) {
+                    optionNode.value = option.value;
+                }
+
+                select.appendChild(optionNode);
+            });
+        }
+
+        function removeOptions(selector, start) {
+            let select = document.querySelector(selector);
+
+            for (let i = 1; i < select.options.length; i += 1) {
+                select.removeChild(select.options[i]);
+            }
+        }
+
+        function onProjectChange() {
+            let projectId = getSelectedOption("#project");
+
+            return fetch(`http://localhost:3000/api/projects/${projectId}/datasets`, {
+                credentials: 'include'
+            }).then((result) => {
+                return result.json()
+            }).then(({ datasets: data }) => {
+                let datasets = data ? data.map(d => ({
+                    label: d.datasetReference.datasetId,
+                    value: d.id
+                })) : []
+
+                document.querySelector('#dataset').parentElement.classList.remove('invisible')
+                addOptions('#dataset', datasets, 'Select dataset...')
+            })
+
+        }
+
+        function onDatasetChange() {
+            let [projectId, datasetId] = getSelectedOption("#dataset").split(":");
+
+            return fetch(`http://localhost:3000/api/projects/${projectId}/datasets/${datasetId}/tables`, {
+                credentials: 'include'
+            }).then((result) => {
+                return result.json()
+            }).then(({ tables: data }) => {
+                console.log(data);
+
+                let tables = data ? data.map(d => ({ label: d.tableReference.tableId, value: d.id })) : []
+
+                document.querySelector('#table').parentElement.classList.remove('invisible')
+                addOptions('#table', tables, 'Select table...')
+            })
+        }
+
+        function onTableChange() {
+            document.querySelector('#importDataFinishBtn').disabled = false
+        }
+
+        function importData() {
+            document.querySelector("#importDataFinishBtn").disabled = true;
+
+            let tableId = getSelectedOption("#table");
+
+            return fetch('http://localhost:3000/api/import', {
+                credentials: 'include',
+                method: 'POST',
+                body: JSON.stringify({ 
+                    provider: 'bigquery',
+                    id: tableId, 
+                    datasetName: document.getElementById('datasetName').value.trim()
+                })
+            }).then((result) => {
+                return result.json()
+            }).then(({ dataset }) => {
+                console.log(dataset)
+                addDatasetToList(dataset)
+
+                var importSocket = new WebSocket(`ws://${location.host}/api/notifications/${dataset.id}`);
+                importSocket.onmessage = (event) => {
+                    dataset = JSON.parse(event.data)
+                    updateDatasetInList(dataset)
+                    // console.log();
+                }
+
+                $('#newImportModal').modal('toggle')
+            }).catch((e) => {
+                console.log(e);
+            }).finally(() => {
+                document.querySelector("#importDataFinishBtn").disabled = false;
+            })
+        }
+
+        function formatDate(date) {
+            const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            return date.getDate() + " " + months[(date.getMonth())] + ", " + date.getFullYear();
+        }
+
+        function formatDataset(dataset) {
+            dataset.status = dataset.status.charAt(0).toUpperCase() + dataset.status.slice(1);
+            dataset.updatedAt = new Date(dataset.updatedAt)
+            dataset.createdAt = new Date(dataset.updatedAt)
+
+            return dataset
+        }
+
+        function getCardTemplate(dataset) {
+            const providerMap = {
+                bigquery: {
+                    logo: 'https://cdn.worldvectorlogo.com/logos/google-bigquery-logo-1.svg',
+                    name: 'Google BigQuery'
+                }
+            }
+
+            const provider = providerMap[dataset.provider]
+
+            const badgeClass = dataset.status == 'Imported' ? 'badge-soft-success' : 'badge-soft-warning'
+            const href = dataset.status == 'Imported' ? `{{host}}/dataset/${dataset.id}` : '#'
+            const cursor = dataset.status == 'Imported' ? 'pointer' : 'unset'
+
+            return (
+                `<li class="card mb-2" id="${dataset.id}">` +
+                `    <a class="card-body card-body-height" href="${href}" style="cursor: ${cursor}">` +
+                '        <div class="media">' +
+                '            <!-- Avatar -->' +
+                '       <!-- <div class="avatar avatar-sm avatar-soft-dark avatar-circle mr-3">' +
+                '                <span class="avatar-initials">B</span>' +
+                '            </div> -->' +
+                '            <img class="avatar avatar-sm avatar-circle mr-3"' +
+                `                src="${provider.logo}"` +
+                '                alt="Image Description">' +
+                '            <!-- End Avatar -->' +
+                '' +
+                '            <div class="media-body">' +
+                '                <div class="row">' +
+                '                    <div class="col-7 col-md-5 order-md-1">' +
+                `                        <h5 class="mb-0">${dataset.name}</h5>` +
+                `                        <span class="font-size-sm">${provider.name}</span>` +
+                '                    </div>' +
+                '' +
+                '                    <div class="col-5 col-md-4 order-md-3 text-right mt-2 mt-md-0">' +
+                `                        <h5 class="mb-0" id="${dataset.id}_itemCount">${dataset.size.toLocaleString('en-US')} items</h5>` +
+                `                        <span class="font-size-sm" id="${dataset.id}_updatedAt">${formatDate(dataset.updatedAt)}</span>` +
+                '                    </div>' +
+                '' +
+                '                    <div class="col-auto col-md-3 order-md-2">' +
+                `                        <span class="badge ${badgeClass} badge-pill" id="${dataset.id}_status">${dataset.status}</span>` +
+                '                    </div>' +
+                '                </div>' +
+                '                <!-- End Row -->' +
+                '            </div>' +
+                '        </div>' +
+                '    </a>' +
+                '</li>'
+            )
+        }
+
+        function addDatasetToList(dataset) {
+            dataset = formatDataset(dataset)
+
+            const listNode = document.querySelector("#importedDatasets")
+            listNode.innerHTML += getCardTemplate(dataset)
+            // datasets.forEach((dataset) => {
+            //     listNode.innerHTML += getCardTemplate(dataset)
+            // })
+        }
+
+        function createDatasetsList(datasets) {
+            const listNode = document.querySelector("#importedDatasets")
+            datasets.forEach((dataset) => {
+                listNode.innerHTML += getCardTemplate(dataset)
+            })
+        }
+
+        function updateDatasetInList(dataset) {
+            dataset = formatDataset(dataset)
+
+            document.getElementById(dataset.id).style.cursor = "pointer"
+
+            document.getElementById(`${dataset.id}_status`).classList.remove('badge-soft-warning')
+            document.getElementById(`${dataset.id}_status`).classList.add('badge-soft-success')
+            document.getElementById(`${dataset.id}_status`).innerText = dataset.status;
+
+            document.getElementById(`${dataset.id}_updatedAt`).innerText = formatDate(dataset.updatedAt);
+            document.getElementById(`${dataset.id}_itemCount`).innerText = `${dataset.size.toLocaleString('en-US')} items`;
+        }
+
+        function openModal(selector) {
+            loadProjects();
+            $(selector).modal('toggle')
+        }
+    
+        function loadDatasets() {
+            return fetch('http://localhost:3000/api/datasets', {
+                credentials: 'include'
+            }).then((result) => {
+                return result.json()
+            }).then(({ datasets }) => {
+                let formattedDatasets = datasets.map(formatDataset)
+
+                createDatasetsList(formattedDatasets)
+            })
+        }
+
+        loadDatasets()
+    </script>
+    <style>
+        ul li a {
+            text-decoration: none;
+            color: #212529;
+            /* For Example */
+        }
+
+        .page-header {
+            border-bottom: .0625rem solid #e7eaf3;
+            padding-bottom: 1.75rem;
+            margin-bottom: 2.25rem;
+        }
+
+        .page-header-title {
+            margin-bottom: .25rem;
+        }
+
+        .h1,
+        .h2,
+        .h3,
+        .h4,
+        .h5,
+        .h6,
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+            color: #1e2022;
+        }
+
+        .h1,
+        h1 {
+            font-size: calc(1.26609rem + .19312vw);
+        }
+
+        .main .content {
+            padding-top: 8rem;
+            padding-bottom: 1.75rem;
+        }
+
+        .card {
+            box-shadow: 0 6px 12px rgb(140 152 164 / 8%);
+        }
+
+        .media {
+            display: -ms-flexbox;
+            display: flex;
+            -ms-flex-align: start;
+            align-items: flex-start;
+        }
+
+        .media-body {
+            -ms-flex: 1;
+            flex: 1;
+        }
+
+        .avatar:not(img) {
+            background-color: #fff;
+        }
+
+        .avatar-sm {
+            width: 2.1875rem;
+            height: 2.1875rem;
+        }
+
+        .avatar-circle {
+            border-radius: 50%;
+        }
+
+        .avatar {
+            position: relative;
+            display: inline-block;
+            width: 2.625rem;
+            height: 2.625rem;
+            border-radius: .3125rem;
+        }
+
+        .text-right {
+            text-align: right !important;
+        }
+
+        .avatar-sm .avatar-initials {
+            font-size: .98438rem;
+        }
+
+        .avatar-circle .avatar-img,
+        .avatar-circle .avatar-initials {
+            border-radius: 50%;
+        }
+
+        .avatar-soft-dark .avatar-initials {
+            color: #132144;
+            background-color: rgba(19, 33, 68, .1);
+        }
+
+        .avatar-initials {
+            display: -ms-flexbox;
+            display: flex;
+            -ms-flex-pack: center;
+            justify-content: center;
+            -ms-flex-align: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            font-size: 1.09375rem;
+            font-weight: 600;
+            pointer-events: none;
+            text-transform: uppercase;
+            border-radius: .3125rem;
+        }
+
+        .badge-soft-warning {
+            color: #ec9a3c !important;
+        }
+
+        .badge-soft-warning {
+            color: #f5ca99;
+            background-color: rgba(245, 202, 153, .1);
+        }
+
+        .badge-pill {
+            padding-right: .6em;
+            padding-left: .6em;
+            border-radius: 10rem;
+        }
+
+        .badge-soft-success {
+            color: #00c9a7;
+            background-color: rgba(0, 201, 167, .1);
+        }
+
+        .font-size-sm {
+            font-size: .8125rem;
+        }
+
+        .h5,
+        h5 {
+            font-size: .875rem;
+        }
+
+        *,
+        ::after,
+        ::before {
+            box-sizing: border-box;
+        }
+
+        .mr-3,
+        .mx-3 {
+            margin-right: 1rem !important;
+        }
+
+        .ml-3,
+        .mx-3 {
+            margin-left: 1rem !important;
+        }
+
+        .modal-title {
+            margin-bottom: 0;
+            line-height: 1.6;
+        }
+
+        .modal-header {
+            -ms-flex-align: center;
+            align-items: center;
+            border-width: 0;
+            padding-bottom: 0;
+        }
+
+        .modal-footer {
+            -ms-flex-align: center;
+            align-items: center;
+            border-width: 0;
+            padding-top: 0;
+        }
+
+        .h4,
+        h4 {
+            font-size: .98438rem;
+        }
+
+        @media (min-width: 768px) {
+
+            .modal-lg .modal-body,
+            .modal-xl .modal-body {
+                padding-top: 2.25rem;
+                padding-bottom: 2.25rem;
+            }
+        }
+
+        .input-label {
+            display: block;
+            color: #1e2022;
+            font-size: .875rem;
+        }
+
+        label {
+            display: inline-block;
+            margin-bottom: .5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <main class="d-flex w100 h100 justify-content-center main">
+        <div class="col-sm-9">
+            <div class="content container-fluid">
+                <div class="page-header">
+                    <div class="row align-items-center">
+                        <div class="col-sm mb-2 mb-sm-0">
+                            <h1 class="page-header-title">Datasets</h1>
+                        </div>
+                        <div class="col-sm-auto">
+                            <a class="btn btn-outline-primary d-flex align-items-center"
+                                onclick="openModal('#newImportModal')">
+                                <span class="material-icons-outlined">cloud_download</span>
+                                <span style="margin-left: 10px">Import data</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+
+                <ul class="list-group list-group-flush list-group-no-gutters" id="importedDatasets">
+                </ul>
+
+                <div class="modal fade" id="newImportModal" tabindex="-1" role="dialog"
+                    aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h4 id="newImportModalTitle" class="modal-title">New dataset import</h4>
+                                <button type="button" class="btn btn-icon btn-sm btn-ghost-secondary"
+                                    data-dismiss="modal" aria-label="Close">
+                                    <span class="material-icons-outlined">close</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <div>
+                                    <label for="datasetName" class="input-label">Name</label>
+                                    <div class="input-group input-group-merge">
+                                        <input type="text" class="form-control" name="datasetName"
+                                            id="datasetName" placeholder="Enter dataset name here"
+                                            aria-label="Enter project name here">
+                                    </div>
+                                </div>
+                                <div class="mt-2">
+                                    <label for="project" class="input-label">Project</label>
+                                    <select class="form-select" aria-label="Default select example" id="project"
+                                        onchange="onProjectChange()">
+                                        <option selected disabled>Loading...</option>
+                                    </select>
+                                </div>
+                                <div class="invisible mt-2">
+                                    <label for="dataset" class="input-label">Dataset</label>
+                                    <select class="form-select" aria-label="Default select example" id="dataset"
+                                        onchange="onDatasetChange()">
+                                        <option selected disabled>Loading...</option>
+                                    </select>
+                                </div>
+                                <div class="invisible mt-2">
+                                    <label for="table" class="input-label">Table</label>
+                                    <select class="form-select" aria-label="Default select example" id="table"
+                                        onchange="onTableChange()">
+                                        <option selected disabled>Loading...</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <div class="d-sm-flex align-items-center">
+                                    <div class="d-flex justify-content-end ml-auto">
+                                        <button type="button" class="btn btn-white mr-2" data-dismiss="modal"
+                                            aria-label="Close">Cancel</button>
+                                        <button id="importDataFinishBtn" type="button" class="btn btn-outline-primary"
+                                            disabled="true" onClick="importData()">Import</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+
+</html>

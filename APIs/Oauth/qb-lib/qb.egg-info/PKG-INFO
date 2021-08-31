@@ -1,0 +1,17 @@
+Metadata-Version: 1.1
+Name: qb
+Version: 0.0.1
+Summary: Client wrapper around the quickbooks api
+Home-page: UNKNOWN
+Author: Aleksandar Gadjev
+Author-email: <gadjevalexandar@gmail.com>
+License: UNKNOWN
+Description: A library that encapsulates the quickbooks api in an easy to use client
+Keywords: python,quickbooks
+Platform: UNKNOWN
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Education
+Classifier: Programming Language :: Python :: 2
+Classifier: Programming Language :: Python :: 3
+Classifier: Operating System :: MacOS :: MacOS X
+Classifier: Operating System :: Microsoft :: Windows
